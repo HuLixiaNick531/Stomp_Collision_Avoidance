@@ -22,8 +22,8 @@ for i = 1:size(sphere_centers,1)
 end
 
 try
-    w = 1 + vel;
-    cost_array = w .* max(0, radius + safety_margin - d_values).^2;
+    w = max(vel, 0);
+    cost_array = w .* max(0, radius + safety_margin - d_values);
     cost = sum(cost_array);
 catch  % for debugging
     idx = ceil((sphere_centers-env_corner_vec)./voxel_world.voxel_size);
