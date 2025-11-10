@@ -29,7 +29,13 @@ for i = 2 : nDiscretize
     % xb: 3D workspace position of sphere b at the current time
     % Approximate the speed (xb_dot) using the finite difference of the current and
     % the previous position
-    vel = vecnorm(sphere_centers_prev - sphere_centers,2,2);
+    minCenters = min(size(sphere_centers_prev,1), size(sphere_centers,1));
+    vel = zeros(size(sphere_centers,1), 1);
+    if minCenters > 0
+        vel(1:minCenters) = vecnorm( ...
+            sphere_centers_prev(1:minCenters, :) - sphere_centers(1:minCenters, :), ...
+            2, 2);
+    end
     qo_cost(i) = stompObstacleCost(sphere_centers,radi, voxel_world, vel);
     
     %% TODO: Define your qc_cost to add constraint on the end-effector
