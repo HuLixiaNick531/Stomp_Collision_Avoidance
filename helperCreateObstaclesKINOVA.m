@@ -16,33 +16,44 @@ binary_world = zeros(Env_size(2, 1) / voxel_size(1), Env_size(2, 2) / voxel_size
     Env_size(1, 3) + 0.5 * voxel_size(3) : voxel_size(3) : Env_size(1, 3) + Env_size(2, 3) - 0.5 * voxel_size(3));
 
 %% Static obstacles
-lbox = 0.08*2; % length of the cube
-box_center = [0.4 0.46 0.26]; % (metric) world coordinates of the box center
-aObs = collisionBox(lbox,lbox,lbox);  
-aObs.Pose = trvec2tform(box_center);   
+obscles = struct( ...
+    'center', { [0.4 0.46 0.26], [0.2 -0.25 0.22]}, ...
+    'size',   { [0.16 0.16 0.16], [0.5 0.18 0.44]});
 
+% lbox = 0.08*2; % length of the cube
+% box_center = [0.4 0.46 0.26]; % (metric) world coordinates of the box center
+% aObs = collisionBox(lbox,lbox,lbox);  
+% aObs.Pose = trvec2tform(box_center);
 
 % Set static obstacles
-world = {aObs}; % try adding more static obstacles aObs to dObs or create your own
+% world = {aObs}; % try adding more static obstacles aObs to dObs or create your own
 
 %% Visulaization the obstacle
 % for i=1: length(world)
 %     show(world{i})
 % end
 
-%% voxelize the box obstacles
-cube_metric = [box_center-lbox/2;
-                lbox,lbox,lbox]; % [xmin, ymin, zmin] for 1st row, xyz-lengths for 2nd row
-% range (lower and upper limits) of the cube voxel
-% The number inside ceil is always positive
-cube_voxel = [ceil((cube_metric(1, :)-Env_size(1,:))./voxel_size); ...
-    ceil((cube_metric(1, :) + cube_metric(2, :)-Env_size(1,:))./voxel_size)];
-
-% Update the cube occupancy in the voxel world
-% First generate the 3D grid coordinates (x,y,z subcripts) of cube in the voxel world
-[xc, yc, zc] = meshgrid(cube_voxel(1, 1):cube_voxel(2, 1), cube_voxel(1, 2):cube_voxel(2, 2), cube_voxel(1, 3):cube_voxel(2, 3));
-% Set the corresponding voxel occupancy to 1, meaning occupied
-binary_world(sub2ind([Env_size(2, 1) / voxel_size(1), Env_size(2, 2) / voxel_size(2), Env_size(2, 3) / voxel_size(3)], xc, yc, zc)) = 1;
+world = cell(1, numel(obscles));
+for i = 1:numel(obscles)
+    lbox = obscles(i).size;
+    box_center = obscles(i).center;
+    aObs = collisionBox(lbox(1), lbox(2), lbox(3));
+    aObs.Pose = trvec2tform(box_center);
+    world{i} = aObs;
+    %% voxelize the box obstacles
+    cube_metric = [box_center-lbox/2;
+                    lbox(1),lbox(2),lbox(3)]; % [xmin, ymin, zmin] for 1st row, xyz-lengths for 2nd row
+    % range (lower and upper limits) of the cube voxel
+    % The number inside ceil is always positive
+    cube_voxel = [ceil((cube_metric(1, :)-Env_size(1,:))./voxel_size); ...
+        ceil((cube_metric(1, :) + cube_metric(2, :)-Env_size(1,:))./voxel_size)];
+    
+    % Update the cube occupancy in the voxel world
+    % First generate the 3D grid coordinates (x,y,z subcripts) of cube in the voxel world
+    [xc, yc, zc] = meshgrid(cube_voxel(1, 1):cube_voxel(2, 1), cube_voxel(1, 2):cube_voxel(2, 2), cube_voxel(1, 3):cube_voxel(2, 3));
+    % Set the corresponding voxel occupancy to 1, meaning occupied
+    binary_world(sub2ind([Env_size(2, 1) / voxel_size(1), Env_size(2, 2) / voxel_size(2), Env_size(2, 3) / voxel_size(3)], xc, yc, zc)) = 1;
+end
 
 % % plot the occupied voxel with a marker *
 % plot3(xc(:), yc(:), zc(:), '*');
