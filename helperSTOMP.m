@@ -20,6 +20,23 @@ robot_struct = loadrobot(robot_name);
 % store sampled paths
 theta_samples = cell(1,nPaths);
 
+useSharedRender = exist('stompRenderAxes','var') && isgraphics(stompRenderAxes);
+if useSharedRender
+    renderAxes = stompRenderAxes;
+    renderFigure = ancestor(renderAxes,'figure');
+    showArgs = {'PreservePlot', false, 'Frames', 'on', 'Parent', renderAxes};
+else
+    renderAxes = [];
+    renderFigure = [];
+    showArgs = {'PreservePlot', false, 'Frames', 'on'};
+end
+
+if exist('stompIterLabel','var') && isgraphics(stompIterLabel)
+    iterStatusLabel = stompIterLabel;
+else
+    iterStatusLabel = [];
+end
+
 %% for calculating the acceleration of theta
 % Precompute
 A_k = eye(nDiscretize - 1, nDiscretize - 1);
@@ -42,6 +59,9 @@ RAR_time = [];
 
 [~, Qtheta] = stompTrajCost(robot_struct, theta, R, voxel_world);
 QthetaOld = 0;
+overallTimer = tic;
+iterTimer = tic;
+updateIterLabel(iterStatusLabel, 0, Qtheta, 0, 0);
 
 iter=0;
 while abs(Qtheta - QthetaOld) > convergenceThreshold
@@ -70,6 +90,10 @@ while abs(Qtheta - QthetaOld) > convergenceThreshold
 
     %% TODO: Compute the cost of the new trajectory
     [~, Qtheta] = stompTrajCost(robot_struct, theta, R, voxel_world);
+    iterElapsed = toc(iterTimer);
+    totalElapsed = toc(overallTimer);
+    updateIterLabel(iterStatusLabel, iter, Qtheta, iterElapsed, totalElapsed);
+    iterTimer = tic;
  
     toc
 
@@ -95,6 +119,10 @@ while abs(Qtheta - QthetaOld) > convergenceThreshold
     end
 
 end
+
+iterElapsed = toc(iterTimer);
+totalElapsed = toc(overallTimer);
+updateIterLabel(iterStatusLabel, iter, Qtheta, iterElapsed, totalElapsed);
 
 disp('STOMP Finished.');
 
@@ -130,7 +158,12 @@ v = VideoWriter('KinvaGen3_Training.avi');
 v.FrameRate = 15;
 open(v);
 
-htext = text(-0.2,0.6,0.7,'Iteration = 0','HorizontalAlignment','left','FontSize',14);
+if useSharedRender
+    htext = text(renderAxes,-0.2,0.6,0.7,'Iteration = 0','HorizontalAlignment','left','FontSize',14);
+else
+    htext = text(-0.2,0.6,0.7,'Iteration = 0','HorizontalAlignment','left','FontSize',14);
+    renderFigure = gcf;
+end
 
 if enableVideoTraining == 1
     theta_animation_tmp = theta_animation(~cellfun('isempty',theta_animation));
@@ -142,9 +175,8 @@ if enableVideoTraining == 1
         theta_tmp = theta_animation_tmp{k+1};
 
         for t=1:size(theta_tmp,2)
-            show(robot, theta_tmp(:,t),'PreservePlot', false, 'Frames', 'on');
-            %             drawnow;
-            frame = getframe(gcf);
+            show(robot, theta_tmp(:,t), showArgs{:});
+            frame = captureStompFrame(renderFigure);
             writeVideo(v,frame);
 %             pause(1/15);
             %     pause;
@@ -164,9 +196,9 @@ if enableVideo == 1
     open(v);
 
     for t=1:size(theta,2)
-        show(robot, theta(:,t),'PreservePlot', false, 'Frames', 'on');
+        show(robot, theta(:,t), showArgs{:});
         drawnow;
-        frame = getframe(gcf);
+        frame = captureStompFrame(renderFigure);
         writeVideo(v,frame);
         pause(5/20);
         %     pause;
@@ -176,9 +208,29 @@ end
 %% Show the planned trajectory
 displayAnimation = 1;
 if displayAnimation
+
+    % 计算末端执行器在每个离散时刻的位姿，并画出轨迹
+    eePos = zeros(3, size(theta,2));
+    for t = 1:size(theta,2)
+        T = getTransform(robot, theta(:,t), "tool0");  % 用你的末端连杆名
+        eePos(:,t) = tform2trvec(T).';                         % 转成 xyz
+    end
+    if useSharedRender
+        axDisplay = renderAxes;
+    else
+        axDisplay = gca;
+    end
+    % hold(axDisplay,'on');
+    plot3(axDisplay, eePos(1,:), eePos(2,:), eePos(3,:), 'r-', 'LineWidth', 1.5); % 规划轨迹
+    scatter3(axDisplay, eePos(1,1), eePos(2,1), eePos(3,1), 70, 'g', 'filled', 'Marker','o');   % 起点
+    scatter3(axDisplay, eePos(1,end), eePos(2,end), eePos(3,end), 70, 'r', 'filled', 'Marker','s'); % 终点
+    % hold(axDisplay,'off');
+    frame = captureStompFrame(renderFigure);
+    
     for t=1:size(theta,2)
-        show(robot, theta(:,t),'PreservePlot', false, 'Frames', 'on');
+        show(robot, theta(:,t), showArgs{:});
         drawnow;
+        frame = captureStompFrame(renderFigure);
         pause(5/20);
         %     pause;
     end
@@ -189,4 +241,21 @@ end
 %% save data
 filename = ['Theta_nDisc', num2str(nDiscretize),'_nPaths_', num2str(nPaths), '.mat'];
 save(filename,'theta')
+
+function frame = captureStompFrame(renderFigure)
+if isempty(renderFigure) || ~isgraphics(renderFigure)
+    renderFigure = gcf;
+end
+drawnow;
+frame = getframe(renderFigure);
+end
+
+function updateIterLabel(labelHandle, iter, cost, iterElapsed, totalElapsed)
+if isempty(labelHandle) || ~isgraphics(labelHandle)
+    return;
+end
+labelHandle.String = sprintf('Iter: %d, Cost: %.3f, Iter Time: %.2fs, Total: %.2fs', ...
+    iter, cost, iterElapsed, totalElapsed);
+drawnow limitrate;
+end
 
