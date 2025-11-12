@@ -21,10 +21,11 @@ vel = zeros(length(sphere_centers), 1);
 qo_cost(1) = stompObstacleCost(sphere_centers,radi, voxel_world, vel);
 
 % Define qc_cost to add constraint on the end-effector
+w_qc = 1;
 v_pose_z = T{end}(1:3, 3);
 v_world_z = [0; 0; 1];
 dot_product = dot(v_pose_z, v_world_z);
-qc_cost(1) = max(-1.0, min(1.0, dot_product));
+qc_cost(1) = w_qc * (max(-1.0, min(1.0, dot_product)));
 
 for i = 2 : nDiscretize
     sphere_centers_prev = sphere_centers;
@@ -48,7 +49,7 @@ for i = 2 : nDiscretize
     v_pose_z = T{end}(1:3, 3);
     v_world_z = [0; 0; 1];
     dot_product = dot(v_pose_z, v_world_z);
-    qc_cost(i) = max(-1.0, min(1.0, dot_product));
+    qc_cost(i) = w_qc * (max(-1.0, min(1.0, dot_product)));
 end
 
 %% Local trajectory cost: you need to specify the relative weights between different costs
