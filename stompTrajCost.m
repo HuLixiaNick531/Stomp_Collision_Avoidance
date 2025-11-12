@@ -12,7 +12,7 @@ qo_cost = zeros(1, nDiscretize);
 qc_cost = zeros(1, nDiscretize);
 
 % Get the coordinates of joints in World frame 
-[X, ~] = updateJointsWorldPosition(robot_struct, theta(:, 1));
+[X, T] = updateJointsWorldPosition(robot_struct, theta(:, 1));
 % Construct the spheres around the robot manipulator for collision
 % avoidance
 [sphere_centers,radi] = stompRobotSphere(X);
@@ -20,11 +20,17 @@ qc_cost = zeros(1, nDiscretize);
 vel = zeros(length(sphere_centers), 1);
 qo_cost(1) = stompObstacleCost(sphere_centers,radi, voxel_world, vel);
 
+% Define qc_cost to add constraint on the end-effector
+v_pose_z = T{end}(1:3, 3);
+v_world_z = [0; 0; 1];
+dot_product = dot(v_pose_z, v_world_z);
+qc_cost(1) = max(-1.0, min(1.0, dot_product));
+
 for i = 2 : nDiscretize
     sphere_centers_prev = sphere_centers;
     % Calculate the kinematics of the manipulator, given the
     % configuration theta values at different time (i=2:nDiscretize)
-    [X, ~] = updateJointsWorldPosition(robot_struct, theta(:, i));
+    [X, T] = updateJointsWorldPosition(robot_struct, theta(:, i));
     [sphere_centers, radi] = stompRobotSphere(X);
     % xb: 3D workspace position of sphere b at the current time
     % Approximate the speed (xb_dot) using the finite difference of the current and
@@ -38,8 +44,11 @@ for i = 2 : nDiscretize
     end
     qo_cost(i) = stompObstacleCost(sphere_centers,radi, voxel_world, vel);
     
-    %% TODO: Define your qc_cost to add constraint on the end-effector
-    qc_cost = 0;
+    % Define qc_cost to add constraint on the end-effector
+    v_pose_z = T{end}(1:3, 3);
+    v_world_z = [0; 0; 1];
+    dot_product = dot(v_pose_z, v_world_z);
+    qc_cost(i) = max(-1.0, min(1.0, dot_product));
 end
 
 %% Local trajectory cost: you need to specify the relative weights between different costs
