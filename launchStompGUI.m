@@ -1,6 +1,21 @@
 function launchStompGUI()
 % launchStompGUI Create a classic figure-based GUI with embedded axes to run STOMP.
+clear all;
+% --- 在创建GUI前运行场景初始化脚本（在 Base 工作区执行）---
+try
+    % 获取当前 launchStompGUI.m 所在路径
+    thisPath = fileparts(mfilename('fullpath'));
+    scriptPath = fullfile(thisPath, 'runStompScenario.m');
+    
+    % 在 Base 工作区执行 runStompScenario.m
+    evalin('base', sprintf('run(''%s'');', scriptPath));
+    disp('[STOMP GUI] runStompScenario.m executed successfully.');
+catch ME
+    warning('[STOMP GUI] Failed to run runStompScenario.m: %s', ME.message);
+end
 
+
+% --- GUI创建 ---
 fig = figure('Name','STOMP Planner','NumberTitle','off','MenuBar','none',...
     'ToolBar','figure','Color',[1 1 1],'Position',[200 200 720 520]);
 
@@ -36,6 +51,7 @@ assignin('base','stompRenderAxes',renderAx);
 assignin('base','stompIterLabel',iterLbl);
 
 end
+
 
 function runHelperCommand(src,statusTxt,iterLbl,renderAx,cmd,successMsg)
 statusTxt.String = 'Running...';
