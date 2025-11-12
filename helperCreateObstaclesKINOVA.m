@@ -16,9 +16,26 @@ binary_world = zeros(Env_size(2, 1) / voxel_size(1), Env_size(2, 2) / voxel_size
     Env_size(1, 3) + 0.5 * voxel_size(3) : voxel_size(3) : Env_size(1, 3) + Env_size(2, 3) - 0.5 * voxel_size(3));
 
 %% Static obstacles
+zmid   = 0.25;         % U 的中心高度（Z）
+xmid   = 0.00;         % U 在 X 方向居中
+y_center = 0.20;       % U 的中心在 Y（把整块往 +Y 放一点）
+
+gap_x  = 0.28;         % 两根立柱的内宽（沿 X）
+post_w = 0.04;         % 立柱宽（沿 X）
+post_t = 0.05;         % 立柱厚（沿 Y）
+post_h = 0.40;         % 立柱高度（沿 Z）
+
+depthY = 0.28;         % U 的纵深（沿 Y）
+back_t = 0.05;         % 背板厚度（沿 Y）
+
+% 三个盒子：左立柱、右立柱、背板（开口朝 +Y）
 obscles = struct( ...
-    'center', { [0.4 0.46 0.26], [0.2 -0.25 0.22]}, ...
-    'size',   { [0.16 0.16 0.16], [0.5 0.18 0.44]});
+  'center', { [xmid - gap_x/2, y_center,               zmid], ...   % 左柱
+              [xmid + gap_x/2, y_center,               zmid], ...   % 右柱
+              [xmid,            y_center - depthY/2,   zmid]  }, ...% 背板（-Y 侧）
+  'size',   { [post_w,          post_t,                post_h], ...
+              [post_w,          post_t,                post_h], ...
+              [gap_x + post_w,  back_t,                post_h] } );
 
 % lbox = 0.08*2; % length of the cube
 % box_center = [0.4 0.46 0.26]; % (metric) world coordinates of the box center
