@@ -1,8 +1,8 @@
 %Parameters
 % T = 5; 
-nDiscretize = 20; % number of discretized waypoint
-nPaths = 20; % number of sample paths
-convergenceThreshold = 0.1; % convergence threshhold
+nDiscretize = 50; % number of discretized waypoint
+nPaths = 100; % number of sample paths
+convergenceThreshold = 0.05; % convergence threshhold
 
 % Initial guess of joint angles theta is just linear interpolation of q0
 % and qT
