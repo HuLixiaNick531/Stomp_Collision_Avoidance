@@ -18,9 +18,9 @@ binary_world = zeros(Env_size(2, 1) / voxel_size(1), Env_size(2, 2) / voxel_size
 %% Static obstacles
 zmid   = 0.25;         % U 的中心高度（Z）
 xmid   = 0.00;         % U 在 X 方向居中
-y_center = 0.20;       % U 的中心在 Y（把整块往 +Y 放一点）
+y_center = 0.24;       % U 的中心在 Y（把整块往 +Y 放一点）
 
-gap_x  = 0.28;         % 两根立柱的内宽（沿 X）
+gap_x  = 0.21;         % 两根立柱的内宽（沿 X）
 post_w = 0.04;         % 立柱宽（沿 X）
 post_t = 0.05;         % 立柱厚（沿 Y）
 post_h = 0.40;         % 立柱高度（沿 Z）
